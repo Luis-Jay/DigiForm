@@ -1,62 +1,56 @@
-# 🔐 Vue Admin Login with Pinia, Element Plus & Vue Router
-
-A minimal and functional admin login system using **Vue 3**, **Pinia**, **Element Plus**, and **Vue Router**, with support for authentication, local storage persistence, and loading states.
 
 ---
 
-## 📂 Features
+## 🖥️ Documentation
 
-- ✅ Admin login with validation
-- ✅ Password visibility toggle
-- ✅ LocalStorage-based session persistence
-- ✅ Loading spinner on login button
-- ✅ Authentication check and route guard
-- ✅ Logout with success message and redirect
-- ✅ Modular `useAuth` composable
-- ✅ Unauthorized Access Protection
+### 🔐 Login Page  
+Admin users must input their assigned credentials to gain access to the system. This process ensures that only authorized users can access sensitive features of the platform.
+
+### ❓ Forgot Password Page  
+A form interface that reminds the admin of the correct login mechanism. Currently simulated with hardcoded credentials via `localStorage`.
+
+### 📊 Admin Dashboard  
+Once authenticated, users are redirected to the dashboard where they can:
+
+- **Search and filter** student records
+- **Switch between Card View and Table View**
+- **Edit or delete** student details (e.g., name, course, password)
+
+### 📝 Student Registration Drawer  
+A dynamic form for registering new students:
+
+- **Input validations** for fields like name, birthdate, and password
+- **Auto age calculation** based on selected birthdate
+- **Error handling** for incomplete submissions
 
 ---
 
-## 🛠️ Tech Stack
+## 🧑‍💻 Usage Instructions
 
-- **Vue 3 (Composition API)**
-- **Pinia** – State management
-- **Element Plus** – UI components
-- **Vue Router** – Navigation
-- **TypeScript** – Static typing
+### ✅ Login as Admin
+
+1. Launch the app and open the login screen.
+2. Enter your assigned admin username and password.
+3. On success, you'll be redirected to the Admin Dashboard.
+
+### 🗂 Using the Admin Dashboard
+
+- Use the **search bar** to filter students by name.
+- Use the **course dropdown** to filter by course.
+- Switch between **Card View** and **Table View**.
+- Use **Edit** to update student information.
+- Use **Delete** to remove a student record.
+
+### 🧾 Registering a New Student
+
+1. Open the **Student Registration** drawer.
+2. Fill in all required fields.
+3. Age is calculated automatically from the birthdate.
+4. Submit the form. Errors will appear for invalid entries.
 
 ---
 
-## Key Features
+## 📌 Notes
 
-- 🔐 Admin Login System
-The code uses the local storage to store the admin data. Uses hardcoded admin account to simulate backend authentication
+This project simulates backend logic using `localStorage`. Replace with actual API calls and database storage for production environments.
 
-- 🔄 Pinia Store for Login Logic
-Centralized and reactive state management with clean separation of concerns via the useFormStore()
-
-- ⏳ Loading State Handling
-A reactive loading variable shows a spinner on the login button to indicate processing.
-
-- ❗ Form Validation with Feedback
-Shows contextual ElMessage prompts if fields are empty or invalid.
-
-- 🔁 Vue Router Navigation & Redirects
-Auth checks and route protection are managed via the useAuth() composable. Authenticated users are routed to /studentlist, unauthenticated users back to /.
-
-- 👁 Toggleable Password Visibility
-Using Element Plus's built-in show-password feature in <el-input>.
-
-- 🚪 Logout Functionality
-Resets session state, clears auth flag, and shows a logout success message.
-
-- 🧩 Composable-based Auth Utility (useAuth)
-Handles checkAuth(), isAuth(), and logout() logic in a reusable and modular way.
-
-- 🎨 Element Plus UI Styling
-Clean, responsive form inputs, buttons, and messages with a smooth user experience.
-
-
-# LOGIN PAGE
-
-![Alt text](src/assets/ss/Screenshot%202025-06-26%20142445.png)
