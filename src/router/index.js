@@ -4,6 +4,7 @@ import HomeView from '../views/HomeView.vue'
 import Forms from '../views/Forms.vue'
 import StudentList from '@/views/StudentList.vue'
 import ForgotPassword from '@/views/ForgotPassword.vue'
+import Error404 from '@/errors/error404.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -19,9 +20,9 @@ const router = createRouter({
       component: HomeView,
     },
     {
-       path: '/registration',
-       name: 'registration',
-       component: Forms,
+      path: '/registration',
+      name: 'registration',
+      component: Forms,
     },
     {
       path: '/studentlist',
@@ -32,9 +33,13 @@ const router = createRouter({
       path: '/forgotpassword',
       name: 'Password Recovery',
       component: ForgotPassword,
-    }
+    },
+    {
+     path: '/:pathMatch(.*)*',
+     name: 'NotFound',
+     component: Error404
+    },
   ],
 })
-
 
 export default router

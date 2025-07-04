@@ -8,19 +8,19 @@
       class="full-form"
     >
       <el-form-item label="First Name" prop="firstName">
-        <el-input v-model="ruleForm.firstName" placeholder="Enter your first name" />
+        <el-input @input="val => leadingSpaces('firstName', val)" v-model="ruleForm.firstName" placeholder="Enter your first name" />
       </el-form-item>
 
       <el-form-item label="Middle Name" prop="middleInitial">
-        <el-input v-model="ruleForm.middleInitial" placeholder="Enter your middle name" />
+        <el-input @input="val => leadingSpaces('middleInitial', val)" v-model="ruleForm.middleInitial" placeholder="Enter your middle name" />
       </el-form-item>
 
       <el-form-item label="Last Name" prop="lastName">
-        <el-input v-model="ruleForm.lastName" placeholder="Enter your last name" />
+        <el-input @input="val => leadingSpaces('lastName', val)" v-model="ruleForm.lastName" placeholder="Enter your last name" />
       </el-form-item>
 
       <el-form-item label="Username" prop="username">
-        <el-input v-model="ruleForm.username" placeholder="Enter your username" />
+        <el-input @input="val => leadingSpaces('username', val)" v-model="ruleForm.username" placeholder="Enter your username" />
       </el-form-item>
 
       <el-form-item label="Birthday" prop="birthDate" required>
@@ -30,6 +30,10 @@
           placeholder="Select birth date"
           style="width: 100%"
         />
+      </el-form-item>
+
+      <el-form-item label="Age" prop="age">
+        <el-input v-model.number="ruleForm.age" type="number" placeholder="Age auto calculated" readonly />
       </el-form-item>
 
       <el-form-item label="Course" prop="course" required>
@@ -43,20 +47,16 @@
         </el-select>
       </el-form-item>
 
-      <el-form-item label="Age" prop="age">
-        <el-input v-model.number="ruleForm.age" type="number" placeholder="Enter your age" readonly />
-      </el-form-item>
-
       <el-form-item label="Address" prop="address">
-        <el-input v-model="ruleForm.address" placeholder="Enter your address" />
+        <el-input @input="val => leadingSpaces('address', val)" v-model="ruleForm.address" placeholder="Enter your address" />
       </el-form-item>
 
       <el-form-item label="Password" prop="password">
-        <el-input type="password" v-model="ruleForm.password" placeholder="Enter your password" />
+        <el-input @input="val => leadingSpaces('password', val)" type="password" v-model="ruleForm.password" placeholder="Enter your password" />
       </el-form-item>
 
       <el-form-item>
-        <el-button type="primary" @click="submitForm(ruleFormRef)" style="width: 100%">
+        <el-button :loading="isSubmitting" :disabled="isSubmitting" type="primary" @click="submitForm(ruleFormRef)" style="width: 100%">
           Submit
         </el-button>
       </el-form-item>
@@ -73,6 +73,7 @@ import { FormInstance, FormRules, ElButton } from 'element-plus';
 import { courses } from '@/constants'
 import { ElMessage } from 'element-plus'
 import { watch } from 'vue'
+import { removeLeadingSpaces } from '@/utils/leadingspaces';
 
 interface RuleForm {
     username: string
@@ -112,14 +113,52 @@ const rules = {
   ],
   firstName: [
     { required: true, message: 'Please enter your first name', trigger: 'blur' },
+    { min: 6, max: 30, message: 'First name exceeds maximum characters', trigger: 'blur' },
   ],
-  middleInitial: [
-    { required: false, message: 'Please enter your middle initial', trigger: 'blur' },
-    { min: 3, max: 10, message: 'Middle initial must be 1 character', trigger: 'blur' },
-  ],
-  lastName: [
-    { required: true, message: 'Please enter your last name', trigger: 'blur' },
-  ],
+ middleInitial: [
+  {
+    validator: (rule, value, callback) => {
+      if (!value) {
+        return callback(); // not required
+      }
+
+      const onlyLetters = /^[A-Za-z]+$/;
+
+      if (!onlyLetters.test(value)) {
+        return callback(new Error('Middle name must contain letters only'));
+      }
+
+      if (value.length > 15) {
+        return callback(new Error('Middle name must be 1 to 3 characters'));
+      }
+
+      callback(); // ✅ valid
+    },
+    trigger: 'blur',
+  }
+],
+ lastName: [
+  {
+    required: true,
+    validator: (rule, value, callback) => {
+      const trimmed = value?.trim() || '';
+      if (!trimmed) {
+        return callback(new Error('Please enter your last name'));
+      }
+
+      const onlyLetters = /^[A-Za-z\s\-']+$/; // allows letters, spaces, hyphens, apostrophes
+
+      if (!onlyLetters.test(trimmed)) {
+        return callback(new Error('Last name must contain letters only'));
+      }
+
+      callback(); // ✅ valid
+    },
+    trigger: 'blur',
+  },
+  { min: 6, max: 30, message: 'Last name exceeds maximum characters', trigger: 'blur' }
+]
+,
   birthDate: [
     { required: true, message: 'Please select your birth date', trigger: 'change' },
   ],
@@ -129,15 +168,18 @@ const rules = {
   ],
   address: [
     { required: true, message: 'Please enter your address', trigger: 'blur' },
+    { min: 3, max: 60, message: 'Address exceeds maximum allowed characters', trigger: 'blur' },
   ],
   course: [
     { required: true, message: 'Please select a course', trigger: 'change' },
   ],
 }
-
+const isSubmitting = ref(false)
 const courseOptions = courses;
 const submitForm = async (formEl: FormInstance | undefined) => {
-  if (!formEl) return;
+  if (!formEl || isSubmitting.value ) return;
+
+  isSubmitting.value = true;
 
   await formEl.validate((valid, fields) => {
     if (valid) {
@@ -173,9 +215,15 @@ const submitForm = async (formEl: FormInstance | undefined) => {
 
     } else {
       console.log('Form validation failed', fields);
+      isSubmitting.value = false
     }
   });
 };
+
+
+function leadingSpaces(field: keyof typeof ruleForm, val: string) {
+  (ruleForm[field] as string)= removeLeadingSpaces(val)
+}
 
 watch(
   () => ruleForm.birthDate,
@@ -219,10 +267,11 @@ watch(
   justify-content: center;
   align-items: flex-start;
   padding: 24px;
-  height: 100%;
+  height: 50%;
   width: 100%;
   overflow-y: auto;
   box-sizing: border-box;
+  margin-bottom: auto;
 }
 
 .full-form {
@@ -231,7 +280,9 @@ watch(
   box-sizing: border-box;
 }
 
-
+.full-form .el-form-item{
+  margin-bottom: 30px;
+}
 
 
 </style>

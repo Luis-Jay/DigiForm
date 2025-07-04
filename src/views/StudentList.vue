@@ -149,23 +149,42 @@
               <h4><i class="el-icon-edit"></i> Edit Student</h4>
             </div>
             
-            <el-form label-position="top" class="edit-form">
+            <el-form
+              label-position="top"
+              class="edit-form"
+              :model="selectedStudent"
+              :rules="formRules"
+              ref="editForm"
+            >
               <div class="form-row">
-                <el-form-item label="First Name" class="form-item">
-                  <el-input v-model="selectedStudent.firstName" placeholder="First name" />
+                <el-form-item label="First Name" class="form-item" prop="firstName">
+                  <el-input @input="val => leadingSpaces('firstName', val)" v-model="selectedStudent.firstName" placeholder="First name" />
                 </el-form-item>
 
-                <el-form-item label="M.I." class="form-item-small">
-                  <el-input v-model="selectedStudent.middleInitial" placeholder="M.I." maxlength="2" />
-                </el-form-item>
+                  <el-form-item
+                    label="Middle Name"
+                    class="form-item-small"
+                    prop="middleInitial"
+                  >
+                    <el-input
+                      @input="val => leadingSpaces('middleInitial', val)"
+                      v-model="selectedStudent.middleInitial"
+                      placeholder="Middle name"
+                      maxlength="30"
+                    />
+                  </el-form-item>
               </div>
 
-              <el-form-item label="Last Name">
-                <el-input v-model="selectedStudent.lastName" placeholder="Last name" />
+              <el-form-item label="Last Name" prop="lastName">
+                <el-input @input="val => leadingSpaces('lastName', val)" v-model="selectedStudent.lastName" placeholder="Last name" />
               </el-form-item>
 
-              <el-form-item label="Course">
-                <el-select v-model="selectedStudent.course" placeholder="Select Course" style="width: 100%">
+              <el-form-item label="Course" prop="course">
+                <el-select
+                  v-model="selectedStudent.course"
+                  placeholder="Select Course"
+                  style="width: 100%"
+                >
                   <el-option
                     v-for="option in courseOptions"
                     :key="option"
@@ -175,33 +194,48 @@
                 </el-select>
               </el-form-item>
 
-              <el-form-item label="Password">
-                <el-input 
-                  type="textarea" 
-                  v-model="selectedStudent.password" 
+              <el-form-item label="Birthday" prop="birthDate">
+                <el-date-picker
+                  v-model="selectedStudent.birthDate"
+                  type="date"
+                  placeholder="Pick a date"
+                  style="width: 100%"
+                  @change="updateAge"
+                />
+              </el-form-item>
+
+              <el-form-item label="Age" prop="age">
+                <el-input v-model="selectedStudent.age" :readonly="true" />
+              </el-form-item>
+
+              <el-form-item label="Password" prop="password">
+                <el-input
+                  type="textarea"
+                  v-model="selectedStudent.password"
                   placeholder="Change Password"
                   :rows="1"
                 />
               </el-form-item>
 
-              <el-form-item label="Address">
-                <el-input 
-                  type="textarea" 
-                  v-model="selectedStudent.address" 
+              <el-form-item label="Address" prop="address">
+                <el-input
+                  type="textarea"
+                  v-model="selectedStudent.address"
                   placeholder="Enter address"
                   :rows="3"
                 />
               </el-form-item>
 
               <div class="form-actions">
-                <el-button type="success" @click="saveStudentEdits" style="padding-left: -1px; left: 2%;">
+                <el-button type="success" @click="saveStudentEdits">
                   Save Changes
                 </el-button>
-                <el-button @click="selectedStudent = null" >
+                <el-button @click="selectedStudent = null">
                   Cancel
                 </el-button>
               </div>
             </el-form>
+
           </div>
           
 
@@ -350,11 +384,21 @@
         </el-table-column>
 
         <!-- Birth Date -->
-        <el-table-column label="Birth Date" width="120" align="center">
-          <template #default="{ row }">
-            <span class="table-text">{{ formatDate(row.birthDate) }}</span>
-          </template>
-        </el-table-column>
+            <el-table-column label="Birth Date" width="180" align="center">
+      <template #default="{ row }">
+        <el-date-picker
+          v-if="selectedStudent?.id === row.id"
+          v-model="selectedStudent.birthDate"
+          type="date"
+          placeholder="Pick a date"
+          style="width: 100%"
+          :disabled-date="(time) => time.getTime() > Date.now()"
+          @change="updateAge"
+        />
+        <span v-else class="table-text">{{ formatDate(row.birthDate) }}</span>
+      </template>
+    </el-table-column>
+
 
         <!-- Address -->
         <el-table-column label="Address" min-width="200">
@@ -462,6 +506,7 @@ import { useRouter } from 'vue-router'
 import { useAuth } from '@/composable/useAuth'
 import { truncateString } from '@/utils/truncate';
 import { hasMiddleInitial } from '@/utils/studentUtils';
+import { removeLeadingSpaces } from '@/utils/leadingspaces';
 
 const loading = ref(false)
 const { checkAuth, logout } = useAuth()
@@ -602,6 +647,17 @@ function saveStudentEdits() {
     },2000)
 }
 
+type StringKeysOnly<T> = {
+  [K in keyof T]: T[K] extends string ? K : never;
+}[keyof T];
+
+function leadingSpaces(field: StringKeysOnly<Student>, val: string) {
+  if (selectedStudent.value) {
+    selectedStudent.value[field] = removeLeadingSpaces(val);
+  }
+}
+
+
 function confirmDelete(id: string) {
   ElMessageBox.confirm(
     'Are you sure you want to delete this user?',
@@ -631,7 +687,93 @@ function handleLogout() {
    logout()
 }
 
+function updateAge(date: string) {
+  if (!date) {
+    selectedStudent.value.age = 0;
+    return;
+  }
+
+  const birth = new Date(date);
+  const today = new Date();
+
+  let age = today.getFullYear() - birth.getFullYear();
+  const m = today.getMonth() - birth.getMonth();
+
+  if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) {
+    age--;
+  }
+
+  selectedStudent.value.age = age;
+}
+
+const validateMiddleInitial = (rule, value, callback) => {
+  const regex = /^[A-Za-z.]+$/;
+
+  if (!value || value.trim() === '') {
+    callback(new Error('Middle name is required'));
+    console.log(value)
+  } else if (!regex.test(value)) {
+    callback(new Error('Only letters and optional periods are allowed'));
+    console.log("this is working")
+  } else {
+    callback();
+  }
+};
+
+
+const formRules = {
+  firstName: [
+    { required: true, message: 'First name is required', trigger: 'blur' },
+    {
+      pattern: /^[A-Za-z\s'-]+$/,
+      message: 'Only letters, spaces, hyphens, and apostrophes allowed',
+      trigger: 'blur'
+    }
+  ],
+  middleInitial: [
+    { required: true, message: 'Middle name is required', trigger: 'blur' },
+    {
+      pattern: /^[A-Za-z\s'-]+$/,
+      message: 'Only letters, spaces, hyphens, and apostrophes allowed',
+      trigger: 'blur'
+    }
+  ],
+  lastName: [
+    { required: true, message: 'Last name is required', trigger: 'blur', },
+    { min: 2, max: 30, message: 'Last name exceeds maximum characters', trigger: 'blur' },
+    {
+      pattern: /^[A-Za-z\s'-]+$/,
+      message: 'Only letters, spaces, hyphens, and apostrophes allowed',
+      trigger: 'blur'
+    }
+  ],
+  course: [
+    { required: true, message: 'Course is required', trigger: 'change' }
+  ],
+  birthDate: [
+    { required: true, message: 'Birthday is required', trigger: 'change' }
+  ],
+  password: [
+    { required: true, message: 'Password is required', trigger: 'blur' },
+    {
+      min: 6,
+      message: 'Password must be at least 6 characters',
+      trigger: 'blur'
+    }
+  ],
+  address: [
+    { required: true, message: 'Address is required', trigger: 'blur' }
+  ],
+  age: [
+    { required: true, message: 'Please enter your age', trigger: 'blur' },
+    { type: 'number', min: 1, max: 90, message: 'Age must be between 1 and 90', trigger: 'blur' },
+  ]
+}
+
+
+
 watch([searchName, selectedCourse], applyFilters)
+
 loadStudents()
 
 
@@ -1000,15 +1142,18 @@ loadStudents()
 .form-row {
   display: grid;
   grid-template-columns: 1fr 80px;
-  gap: 12px;
+  gap: 10px;
 }
 
 .form-item {
   margin-bottom: 16px;
+  width: 90%;
 }
 
 .form-item-small {
   margin-bottom: 16px;
+  width: 119px;
+  margin-left: -40px;
 }
 
 .form-actions {

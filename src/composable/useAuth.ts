@@ -12,9 +12,9 @@ export const useAuth = () => {
 
   function checkAuth() {
     if (isAuth()) {
-      router.replace('/studentlist') // use replace to avoid browser back
+      router.push('/studentlist') // use replace to avoid browser back
     } else {
-      router.replace('/')
+      router.push('/')
     }
   }
 

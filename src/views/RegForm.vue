@@ -1,7 +1,7 @@
 <template>
   <div class="background"></div>
   <div class="form">
-    <el-form :model="{ username, password }" ref="loginForm" @submit.native.prevent="handleLogin">
+    <el-form :model="{ username, password }" ref="formRef" @submit.native.prevent="handleLogin" :rules="adminRules">
 
       
       <div class="form__group">
@@ -14,6 +14,7 @@
             class="form__input"
             @focus="isUsernameFocused = true"
             @blur="isUsernameFocused = false"
+            @input="onInput"
           />
           <label
             for="username"
@@ -69,23 +70,44 @@ import { useFormStore } from '@/stores/form.ts'
 import { ElMessage } from 'element-plus'
 import { FormInstance, FormRules, ElButton } from 'element-plus'
 import { useRoute, useRouter } from 'vue-router'
+import { preventSpace } from '@/utils/truncate'
+import { useAuth } from '@/composable/useAuth'
+import { rules } from 'eslint-plugin-vue'
+
+const { checkAuth } = useAuth()
 const formStore = useFormStore()
 const username = ref('')
 const password = ref('')
 const isUsernameFocused = ref(false)
 const isPasswordFocused = ref(false)
 const router = useRouter()
+const formRef = ref<FormInstance>
+
+// rules
+const adminRules = {
+  username: [
+   { required: true, message: 'Please input admin username', trigger: 'blur' },
+  ],
+  password: [
+    { required: true, message: 'Please enter your password', trigger: 'blur' }
+  ]
+}
 
 function handleLogin() {
   formStore.loginUser(username.value, password.value)
-  localStorage.setItem('isAuthenticated', JSON.stringify(true))
 }
 
 function forgotPasswordRouting() {
   router.push('/forgotpassword')
 }
 
+function onInput() {
+  username.value = preventSpace(username.value)
+}
 
+onMounted(() => {
+   checkAuth()
+})
 
 
 </script>
@@ -130,7 +152,7 @@ function forgotPasswordRouting() {
 .form__group {
   position: relative;
   width: 100%;
-  margin-bottom: 25px;
+  margin-bottom: 45px;
   box-sizing: content-box;
 }
 

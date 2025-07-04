@@ -1,7 +1,7 @@
 <template>
- <RouterView />
+  <RouterView />
 </template>
 
 <script setup>
-import RegForm from './views/RegForm.vue';
+import RegForm from './views/RegForm.vue'
 </script>

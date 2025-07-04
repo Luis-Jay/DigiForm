@@ -3,8 +3,7 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { courses } from '@/constants'
-
-
+import { showMessageOnce } from '@/utils/showMessageOnce'
 
 interface Admin {
   id: string
@@ -19,18 +18,17 @@ export const useFormStore = defineStore('form', () => {
 
   const users = ref<Admin[]>([])
 
-  
   const hardcodedAdmin: Admin = {
     id: 'BronJames',
     username: 'admin',
     password: 'admin123',
-    email: 'KingJames@tbu.net',
+    email: 'kingjames@tbu.net',
   }
 
   if (!localStorage.getItem('admin')) {
     localStorage.setItem('admin', JSON.stringify(hardcodedAdmin))
     localStorage.setItem('isAuthenticated', JSON.stringify(false))
-    users.value.push(hardcodedAdmin) 
+    users.value.push(hardcodedAdmin)
   } else {
     try {
       const stored = localStorage.getItem('admin')
@@ -42,17 +40,13 @@ export const useFormStore = defineStore('form', () => {
       console.error(' Failed to load admin from localStorage', e)
     }
   }
-  
-
 
   function findUser(email: string): Admin | undefined {
-    return users.value.find(
-      user => user.email === email || user.email == email
-    )
+    return users.value.find((user) => user.email === email || user.email == email)
   }
 
   function updateUserPassword(id: string, newPassword: string): void {
-    const user = users.value.find(user => user.id === id)
+    const user = users.value.find((user) => user.id === id)
     if (user) {
       user.password = newPassword
       localStorage.setItem('admin', JSON.stringify(user))
@@ -61,7 +55,7 @@ export const useFormStore = defineStore('form', () => {
 
   function loginUser(usernameInput: string, passwordInput: string): void {
     const stored = localStorage.getItem('admin')
-    loading.value = true
+    loading.value = false
     let admins: Admin[] = []
 
     try {
@@ -71,33 +65,44 @@ export const useFormStore = defineStore('form', () => {
       console.error('Invalid JSON in localStorage', e)
     }
 
-    if (!usernameInput && !passwordInput) {
-      ElMessage({ message: 'Please enter your username and password.', type: 'warning' })
+    const trimmedUsername = usernameInput.trim().toLowerCase()
+    const trimmedPassword = passwordInput.trim()
+
+    if (!trimmedUsername && !trimmedPassword) {
+      showMessageOnce('Please enter your username and password.', 'warning')
       return
     }
 
-    if (!usernameInput) {
-      ElMessage({ message: 'Please enter your username.', type: 'warning' })
+    if (!trimmedUsername) {
+      showMessageOnce('Please enter your username.','warning' )
       return
     }
 
-    if (!passwordInput) {
-      ElMessage({ message: 'Please enter your password.', type: 'warning' })
+    if (!trimmedPassword) {
+      showMessageOnce('Please enter your password.','warning' )
       return
     }
 
     const found = admins.find(
-      (admin) => admin.username === usernameInput && admin.password === passwordInput
+      (admin) =>
+        admin.username.trim().toLowerCase() === trimmedUsername &&
+        admin.password === trimmedPassword
     )
 
     if (found) {
       loading.value = true
-      ElMessage({ message: 'Login successful!', type: 'success' })
+      showMessageOnce('Login successful!','success' )
       localStorage.setItem('isAuthenticated', JSON.stringify(true))
-      setTimeout(() => {router.push('/studentlist')},1000)
+      setTimeout(() => {
+        router.push('/studentlist')
+      }, 1000)
     } else {
-      ElMessage({ message: 'Invalid username or password.', type: 'error' })
+      showMessageOnce('Invalid username or password.','error')
+      loading.value = false
     }
+    setTimeout(() => {
+      loading.value = false
+    }, 1000)
   }
 
   return {
@@ -105,6 +110,6 @@ export const useFormStore = defineStore('form', () => {
     loginUser,
     updateUserPassword,
     findUser,
-    loading
+    loading,
   }
 })

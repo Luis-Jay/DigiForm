@@ -1,100 +1,104 @@
 <template>
   <div class="background"></div>
   <div class="form">
-    <el-form :model="{ username, password }" ref="loginForm" @submit.native.prevent="handleForgotPassword">
+    <el-form
+  :model="{ email: identifier, username, password }"
+  :rules="{ email: emailRules }"
+  ref="formRef"
+  @submit.native.prevent="handleForgotPassword"
+>
+  <!-- Email Field -->
+  <div class="form__group">
+    <img class="form-icon" :src="user" />
+    <el-form-item 
+      prop="email"
+    >
+      <el-input
+        @input="onInput"
+        v-model.trim="identifier"
+        placeholder=""
+        autocomplete="off"
+        class="form__input"
+        @focus="isEmailFocused = true"
+        @blur="isEmailFocused = false"
+        clearable
+        :readonly="emailSubmitted"
+      />
+      <label
+        for="email"
+        class="form__label"
+        :class="{ float: isEmailFocused || identifier }"
+      >
+        EMAIL
+      </label>
+    </el-form-item>
+  </div>
 
-     
+  <!-- Password Reset Fields -->
+  <div v-if="showPasswordReset">
+    <div class="form__group">
+      <img class="form-icon" :src="lock" />
+      <el-form-item prop="new-password">
+        <el-input
+          v-model="newPassword"
+          placeholder=""
+          autocomplete="off"
+          type="password"
+          show-password
+          class="form__input"
+          @focus="isPasswordFocused = true"
+          @blur="isPasswordFocused = false"
+          clearable
+        />
+        <label
+          for="password"
+          class="form__label"
+          :class="{ float: isPasswordFocused || newPassword }"
+        >
+          NEW PASSWORD
+        </label>
+      </el-form-item>
+    </div>
 
-      <div class="form__group">
-        <img class="form-icon" :src="user" />
-        <el-form-item prop="email">
-            <el-input
-            v-model="identifier"
-            placeholder=""
-            autocomplete="off"
-            class="form__input"
-            @focus="isEmailFocused = true"
-            @blur="isEmailFocused = false"
-            clearable
-            />
-            <label
-             for="email"
-             class="form__label"
-             :class="{ float: isEmailFocused || identifier } "
-             >EMAIL</label>
-        </el-form-item>
-      </div>
+    <div class="form__group">
+      <img class="form-icon" :src="lock" />
+      <el-form-item prop="confirm-password">
+        <el-input
+          v-model="confirmPassword"
+          placeholder=""
+          autocomplete="off"
+          class="form__input"
+          @focus="isConfirmPasswordFocused = true"
+          @blur="isConfirmPasswordFocused = false"
+          clearable
+          type="password"
+          show-password
+        />
+        <label
+          for="password"
+          class="form__label"
+          :class="{ float: isConfirmPasswordFocused || confirmPassword }"
+        >
+          CONFIRM PASSWORD
+        </label>
+      </el-form-item>
+    </div>
 
-      <!-- 🔐 Password Reset Fields (conditionally shown) -->
-      <div v-if="showPasswordReset">
-        <div class="form__group">
-        <img class="form-icon" :src="lock" />
-        <el-form-item prop="new-password">
-            <el-input
-            v-model="newPassword"
-            placeholder=""
-            autocomplete="off"
-            type="password"
-            show-password
-            class="form__input"
-            @focus="isPasswordFocused = true"
-            @blur="isPasswordFocused = false"
-            clearable
-            />
-            <label
-             for="password"
-             class="form__label"
-             :class="{ float: isPasswordFocused || newPassword } "
-             >NEW PASSWORD</label>
-        </el-form-item>
-      </div>
-
-        <div class="form__group">
-        <img class="form-icon" :src="lock" />
-        <el-form-item prop="confirm-password">
-            <el-input
-            v-model="confirmPassword"
-            placeholder=""
-            autocomplete="off"
-            class="form__input"
-            @focus="isConfirmPasswordFocused = true"
-            @blur="isConfirmPasswordFocused = false"
-            clearable
-            type="password"
-            show-password
-            />
-            <label
-             for="password"
-             class="form__label"
-             :class="{ float: isConfirmPasswordFocused || confirmPassword } "
-             >CONFIRM PASSWORD</label>
-        </el-form-item>
-      </div>
-    
-        
     <div class="submit__Button">
-          <el-button type="success" @click="submitNewPassword">
-            Set New Password
-          </el-button>
-        </div>
-      </div>
-      
-      
-      
-      <!-- Submit button only shows if email is NOT correct -->
-        <div class="submit__Button" v-if="!emailSubmitted">
-        <el-button type="primary" id="btn" @click="handleForgotPassword">
-            SUBMIT EMAIL
-        </el-button>
-        </div>
+      <el-button type="success" @click="submitNewPassword">Set New Password</el-button>
+    </div>
+  </div>
 
-    
+  <!-- Submit button -->
+  <div class="submit__Button" v-if="!emailSubmitted">
+    <el-button type="primary" id="btn" @click="handleForgotPassword">
+      SUBMIT EMAIL
+    </el-button>
+  </div>
+</el-form>
 
-    </el-form>
   </div>
 </template>
-
-
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
@@ -106,6 +110,8 @@ import { ElMessage } from 'element-plus'
 import { FormInstance, FormRules, ElButton } from 'element-plus'
 import { defineStore } from 'pinia'
 import { useRouter } from 'vue-router'
+import { preventSpace } from '@/utils/truncate'
+import { showMessageOnce } from '@/utils/showMessageOnce'
 
 const formStore = useFormStore()
 const router = useRouter()
@@ -113,7 +119,7 @@ const router = useRouter()
 // Form fields
 const username = ref('')
 const password = ref('')
-const email = ref('')
+const email = ref('') // might not needed
 const identifier = ref('') // email input for forgot password
 
 // Focus tracking
@@ -122,35 +128,67 @@ const isUsernameFocused = ref(false)
 const isPasswordFocused = ref(false)
 const isConfirmPasswordFocused = ref(false)
 const emailSubmitted = ref(false)
+const emailError = ref('')
 
 // Password reset fields
 const showPasswordReset = ref(false)
 const newPassword = ref('')
 const confirmPassword = ref('')
-const foundUserId = ref('') // will store id when email is found
+const foundUserId = ref('')
+
+
+// email validation
+const validateEmail = (rule, value, callback) => {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  console.log(emailRegex.test("kingjames@tbu.net"));
+  if (!emailRegex.test(value)) {
+    callback(new Error('Please enter a valid email format')); // STOPS HERE
+  } else {
+    callback();
+  }
+};
+// email rules 
+const emailRules = [
+  { validator: validateEmail, trigger: ['blur', 'change'] }
+]
+const formRef = ref<FormInstance>()
+
+
 
 function forgotPassword() {
-  const input = identifier.value.trim()
+  const input = identifier.value.trim().toLowerCase();
 
+  // 1. Empty input check
   if (!input) {
-    ElMessage.warning('Please enter your email.')
-    return
+    showMessageOnce('Please enter your email.', 'warning');
+    return;
   }
 
-  const user = formStore.findUser(input)
+  // 2. Email format check using your regex
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(input)) {
+    showMessageOnce('Please enter a valid email format.', 'warning');
+    return;
+  }
 
+  // 3. User existence check
+  const user = formStore.findUser(input);
   if (!user) {
-    ElMessage.error('No user found with that email.')
-    showPasswordReset.value = false
-    emailSubmitted.value = false
-    return
+    emailError.value = 'No user found with that email.';
+    showMessageOnce('No user found with that email.', 'warning');
+    showPasswordReset.value = false;
+    emailSubmitted.value = false;
+    return;
   }
 
-  foundUserId.value = user.id
-  showPasswordReset.value = true
-  emailSubmitted.value = true // ✅ email is correct and confirmed by submit
-  ElMessage.success('Email found. You may now set a new password.')
+  // 4. Valid email & user found
+  foundUserId.value = user.id;
+  showPasswordReset.value = true;
+  emailSubmitted.value = true;
+  ElMessage.success('Email found. You may now set a new password.');
+  emailError.value = '';
 }
+
 
 function handleForgotPassword() {
   forgotPassword()
@@ -158,12 +196,25 @@ function handleForgotPassword() {
 
 function submitNewPassword() {
   if (!newPassword.value || !confirmPassword.value) {
-    ElMessage.warning('Please fill out both password fields.')
+    showMessageOnce('Please fill out both password fields.','warning')
     return
   }
 
   if (newPassword.value !== confirmPassword.value) {
-    ElMessage.error('Passwords do not match.')
+    showMessageOnce('Passwords do not match.','error')
+    return
+  }
+  
+
+    // password pattern for maximum security
+  const strongPasswordPattern = 
+  /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_\-+=<>?{}[\]~])[A-Za-z\d!@#$%^&*()_\-+=<>?{}[\]~]{8,}$/
+
+  if (!strongPasswordPattern.test(newPassword.value)) {
+    showMessageOnce(
+      'Password must be at least 8 characters long and include uppercase, lowercase, number, and special character.',
+      'error'
+    )
     return
   }
 
@@ -179,9 +230,11 @@ function submitNewPassword() {
   // route
   router.push('/')
 }
+
+function onInput() {
+  identifier.value = preventSpace(identifier.value)
+}
 </script>
-
-
 
 <style scoped>
 @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600&display=swap');
@@ -193,7 +246,7 @@ function submitNewPassword() {
   width: 100vw;
   height: 100vh;
   background-image: url('@/assets/BG.png');
-  background-color: #244BC5;
+  background-color: #244bc5;
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
@@ -261,7 +314,7 @@ function submitNewPassword() {
   top: -10px;
   left: 8px;
   font-size: 0.8em;
-  background-color: #244BC5;
+  background-color: #244bc5;
   padding: 0 4px;
 }
 
@@ -277,7 +330,7 @@ button,
   text-transform: uppercase;
   cursor: pointer;
   transform: skew(0deg);
-  color: #244BC5;
+  color: #244bc5;
   border-radius: 10px;
   box-shadow: 0 0 8px rgba(0, 0, 0, 0.3);
   position: relative;
