@@ -59,6 +59,7 @@
         :inline="true" 
         label-position="top"
         class="filters-form"
+        ref="editForm"
       >
         <!-- Name Search -->
         <el-form-item label="Search by Name" class="filter-item">
@@ -210,10 +211,11 @@
 
               <el-form-item label="Password" prop="password">
                 <el-input
-                  type="textarea"
+                  type="password"
                   v-model="selectedStudent.password"
                   placeholder="Change Password"
                   :rows="1"
+                  show-password
                 />
               </el-form-item>
 
@@ -227,7 +229,7 @@
               </el-form-item>
 
               <div class="form-actions">
-                <el-button type="success" @click="saveStudentEdits">
+                <el-button type="success" @click="openConfirmDialog = true">
                   Save Changes
                 </el-button>
                 <el-button @click="selectedStudent = null">
@@ -235,7 +237,6 @@
                 </el-button>
               </div>
             </el-form>
-
           </div>
           
 
@@ -288,8 +289,19 @@
                     <span class="info-value">{{ student.address }}</span>
                   </div>
                 </div>
+
+
+                <div class="info-item">
+                  <i class="el-icon-date info-icon"></i>
+                  <div class="info-content">
+                    <span class="info-label">Student ID</span>
+                    <span class="info-value">{{ student.id }}</span>
+                  </div>
+                </div>
+
               </div>
             </div>
+
 
             <div class="card-actions">
               <el-button 
@@ -318,52 +330,82 @@
     
    
     
-    <!-- Table View -->
-    <div v-if="viewMode === 'table' && filteredStudents.length" class="table-container">
-      <el-table
-        v-loading="loading" 
-        :data="filteredStudents" 
-        stripe 
-        border 
-        class="professional-table"
-        :header-cell-style="{ background: '#f8f9fa', color: '#2c3e50', fontWeight: 'bold' }"
-      >
-        <!-- Avatar Column -->
-        <el-table-column label="Avatar" width="80" align="center">
-          <template #default>
-            <el-avatar :size="40" :src="circleUrl" class="table-avatar">
-              <i class="el-icon-user-solid"></i>
-            </el-avatar>
-          </template>
-        </el-table-column>
+<!-- Table View -->
+<div v-if="viewMode === 'table' && filteredStudents.length" class="table-container">
+  <el-form
+    ref="tableEditForm"
+    :model="selectedStudent"
+    :rules="formRules"
+    label-position="top"
+    class="edit-form"
+  >
+    <el-table
+      v-loading="loading"
+      :data="filteredStudents"
+      stripe
+      border
+      class="professional-table"
+      :header-cell-style="{ background: '#f8f9fa', color: '#2c3e50', fontWeight: 'bold' }"
+    >
+      <!-- Avatar Column -->
+      <el-table-column label="Avatar" width="80" align="center">
+        <template #default>
+          <el-avatar :size="40" :src="circleUrl" class="table-avatar">
+            <i class="el-icon-user-solid"></i>
+          </el-avatar>
+        </template>
+      </el-table-column>
 
-        <!-- First Name -->
-        <el-table-column label="First Name" min-width="120">
-          <template #default="{ row }">
+      <!-- First Name -->
+      <el-table-column label="First Name" min-width="120">
+        <template #default="{ row }">
+          <el-form-item
+            v-if="selectedStudent?.id === row.id"
+            prop="firstName"
+            style="margin: 0"
+          >
             <el-input v-if="selectedStudent?.id === row.id" v-model="selectedStudent.firstName" size="small" />
-            <span v-else class="table-text">{{ row.firstName }}</span>
-          </template>
-        </el-table-column>
+          </el-form-item>
+          <span v-else class="table-text">{{ row.firstName }}</span>
+        </template>
+      </el-table-column>
 
-        <!-- Middle Initial -->
-        <el-table-column label="M.I." width="80" align="center">
-          <template #default="{ row }">
+      <!-- Middle Initial -->
+      <el-table-column label="M.N." width="80" align="center">
+        <template #default="{ row }">
+          <el-form-item
+            v-if="selectedStudent?.id === row.id"
+            prop="middleInitial"
+            style="margin: 0"
+          >
             <el-input v-if="selectedStudent?.id === row.id" v-model="selectedStudent.middleInitial" size="small" />
-            <span v-else class="table-text">{{ row.middleInitial }}</span>
-          </template>
-        </el-table-column>
+          </el-form-item>
+          <span v-else class="table-text">{{ row.middleInitial }}</span>
+        </template>
+      </el-table-column>
 
-        <!-- Last Name -->
-        <el-table-column label="Last Name" min-width="120">
-          <template #default="{ row }">
+      <!-- Last Name -->
+      <el-table-column label="Last Name" min-width="120">
+        <template #default="{ row }">
+          <el-form-item
+            v-if="selectedStudent?.id === row.id"
+            prop="lastName"
+            style="margin: 0"
+          >
             <el-input v-if="selectedStudent?.id === row.id" v-model="selectedStudent.lastName" size="small" />
-            <span v-else class="table-text">{{ row.lastName }}</span>
-          </template>
-        </el-table-column>
+          </el-form-item>
+          <span v-else class="table-text">{{ row.lastName }}</span>
+        </template>
+      </el-table-column>
 
-        <!-- Course -->
-        <el-table-column label="Course" min-width="200">
-          <template #default="{ row }">
+      <!-- Course -->
+      <el-table-column label="Course" min-width="200">
+        <template #default="{ row }">
+          <el-form-item
+            v-if="selectedStudent?.id === row.id"
+            prop="course"
+            style="margin: 0"
+          >
             <el-select v-if="selectedStudent?.id === row.id" v-model="selectedStudent.course" size="small" style="width: 100%">
               <el-option
                 v-for="course in courseOptions"
@@ -372,65 +414,94 @@
                 :value="course"
               />
             </el-select>
-            <el-tag v-else type="primary" effect="light" class="course-tag-table">{{ row.course }}</el-tag>
-          </template>
-        </el-table-column>
+          </el-form-item>
+          <el-tag v-else type="primary" effect="light" class="course-tag-table">{{ row.course }}</el-tag>
+        </template>
+      </el-table-column>
 
-        <!-- Age -->
-        <el-table-column prop="age" label="Age" width="80" align="center">
-          <template #default="{ row }">
-            <span class="age-badge">{{ row.age }}</span>
-          </template>
-        </el-table-column>
+      <!-- Age -->
+      <el-table-column prop="age" label="Age" width="80" align="center">
+        <template #default="{ row }">
+          <span class="age-badge">{{ row.age }}</span>
+        </template>
+      </el-table-column>
 
-        <!-- Birth Date -->
-            <el-table-column label="Birth Date" width="180" align="center">
-      <template #default="{ row }">
-        <el-date-picker
-          v-if="selectedStudent?.id === row.id"
-          v-model="selectedStudent.birthDate"
-          type="date"
-          placeholder="Pick a date"
-          style="width: 100%"
-          :disabled-date="(time) => time.getTime() > Date.now()"
-          @change="updateAge"
-        />
-        <span v-else class="table-text">{{ formatDate(row.birthDate) }}</span>
-      </template>
-    </el-table-column>
+      <!-- Birth Date -->
+      <el-table-column label="Birth Date" width="180" align="center">
+        <template #default="{ row }">
+          <el-form-item v-if="selectedStudent?.id === row.id" prop="birthDate" style="margin: 0">
+            <el-date-picker
+              v-if="selectedStudent?.id === row.id"
+              v-model="selectedStudent.birthDate"
+              type="date"
+              placeholder="Pick a date"
+              style="width: 100%"
+              :disabled-date="(time) => time.getTime() > Date.now()"
+              @change="updateAge"
+            />
+          </el-form-item>
+          <span v-else class="table-text">{{ formatDate(row.birthDate) }}</span>
+        </template>
+      </el-table-column>
 
-
-        <!-- Address -->
-        <el-table-column label="Address" min-width="200">
-          <template #default="{ row }">
+      <!-- Address -->
+      <el-table-column label="Address" min-width="200">
+        <template #default="{ row }">
+          <el-form-item
+            v-if="selectedStudent?.id === row.id"
+            prop="address"
+            style="margin: 0"
+          >
             <el-input v-if="selectedStudent?.id === row.id" v-model="selectedStudent.address" size="small" />
-            <span v-else class="table-text address-text">{{ row.address }}</span>
-          </template>
-        </el-table-column>
+          </el-form-item>
+          <span v-else class="table-text address-text">{{ row.address }}</span>
+        </template>
+      </el-table-column>
 
-        <!-- Actions -->
-        <el-table-column label="Actions" width="160" fixed="right" align="center">
-          <template #default="{ row }">
-            <div v-if="selectedStudent?.id === row.id" class="table-actions">
-              <el-button type="success" size="small" @click="saveStudentEdits" >
-                Save
-              </el-button>
-              <el-button size="small" @click="selectedStudent = null" >
-                Cancel
-              </el-button>
-            </div>
-            <div v-else class="table-actions">
-              <el-button size="small" type="info" plain @click="editStudent(row)" >
-                Edit
-              </el-button>
-              <el-button size="small" type="danger" plain @click="confirmDelete(row.id)" >
-                Delete
-              </el-button>
-            </div>
-          </template>
-        </el-table-column>
-      </el-table>
-    </div>
+      <!-- Password -->
+      <el-table-column label="Password" min-width="200">
+        <template #default="{ row }">
+          <el-form-item
+            v-if="selectedStudent?.id === row.id"
+            prop="password"
+            style="margin: 0"
+          >
+            <el-input
+              v-if="selectedStudent?.id === row.id"
+              v-model="selectedStudent.password"
+              size="small"
+              show-password
+              text="password"
+            />
+          </el-form-item>
+          <span v-else class="table-text">{{ row.password }}</span>
+        </template>
+      </el-table-column>
+
+      <!-- Actions -->
+      <el-table-column label="Actions" width="160" fixed="right" align="center">
+        <template #default="{ row }">
+          <div v-if="selectedStudent?.id === row.id" class="table-actions">
+            <el-button type="success" size="small" @click="openConfirmDialogTable = true">
+              Save
+            </el-button>
+            <el-button size="small" @click="selectedStudent = null">
+              Cancel
+            </el-button>
+          </div>
+          <div v-else class="table-actions">
+            <el-button size="small" type="info" plain @click="editStudent(row)">
+              Edit
+            </el-button>
+            <el-button size="small" type="danger" plain @click="confirmDelete(row.id)">
+              Delete
+            </el-button>
+          </div>
+        </template>
+      </el-table-column>
+    </el-table>
+  </el-form>
+</div>
 
     <!--  Empty State -->
     <div v-if="!filteredStudents.length" class="empty-state">
@@ -485,6 +556,54 @@
       </div>
     </template>
   </el-drawer>
+
+            <!-- Confirmation Modal -->
+            <el-dialog
+              v-model="openConfirmDialog"
+              title="Confirm Save"
+              width="300px"
+              append-to-body
+              :close-on-click-modal="false"
+              :close-on-press-escape="false"
+              class="confirm-dialog"
+              top="22%"
+              style="left: 1%"
+            >
+              <span>Are you sure you want to save these changes?</span>
+
+              <template #footer>
+                <div class="dialog-footer">
+                  <el-button @click="openConfirmDialog = false">Cancel</el-button>
+                  <el-button type="primary" @click="confirmSave">
+                    Confirm
+                  </el-button>
+                </div>
+              </template>
+            </el-dialog>
+
+            <!-- Confirmation Modal Table-->
+            <el-dialog
+              v-model="openConfirmDialogTable"
+              title="Confirm Save"
+              width="300px"
+              append-to-body
+              :close-on-click-modal="false"
+              :close-on-press-escape="false"
+              class="confirm-dialog"
+              top="22%"
+              style="left: 1%"
+            >
+              <span>Are you sure you want to save these changes?</span>
+
+              <template #footer>
+                <div class="dialog-footer">
+                  <el-button @click="openConfirmDialogTable = false">Cancel</el-button>
+                  <el-button type="primary" @click="confirmSaveTable">
+                    Confirm
+                  </el-button>
+                </div>
+              </template>
+            </el-dialog>
 </template>
 
 
@@ -507,6 +626,7 @@ import { useAuth } from '@/composable/useAuth'
 import { truncateString } from '@/utils/truncate';
 import { hasMiddleInitial } from '@/utils/studentUtils';
 import { removeLeadingSpaces } from '@/utils/leadingspaces';
+import { showMessageOnce } from '@/utils/showMessageOnce'
 
 const loading = ref(false)
 const { checkAuth, logout } = useAuth()
@@ -531,7 +651,7 @@ const circleUrl = ref(
 )
 const router = useRouter()
 const totalStudents = computed(() => students.value.length)
-
+const editForm = ref<FormInstance | null>(null)
 
 
 function cancelClick() {
@@ -550,7 +670,7 @@ onMounted(() => {
 
   checkAuth()
 
-  // Load students from localStorage
+
   const data = localStorage.getItem('rules')
   try {
     const parsed = data ? JSON.parse(data) : []
@@ -627,25 +747,111 @@ function editStudent(student: Student) {
   selectedStudent.value = { ...student }
 }
 
-function saveStudentEdits() {
-  loading.value = true
 
 
-  if (!selectedStudent.value) return
-  const index = students.value.findIndex(s => s.id === selectedStudent.value.id)
+const saveStudentEdits = async () => {
+  if (!editForm.value || loading.value) return
+  try {
+   
+    const formInstance = editForm.value[0]
+    
+    if (!formInstance || typeof formInstance.validate !== 'function') {
+      throw new Error('Form instance not available')
+    }
 
-  if (index !== -1) {
-    setTimeout(() => {window.location.reload()},1999)
-    students.value[index] = { ...selectedStudent.value }
-    localStorage.setItem('rules', JSON.stringify(students.value))
-    selectedStudent.value = null
+
+    const isValid = await new Promise((resolve) => {
+      formInstance.validate((valid, fields) => {
+        if (valid) {
+          resolve(true)
+        } else {
+          console.log('Validation failed:', fields)
+          resolve(false)
+        }
+      })
+    })
+
+    if (!isValid) {
+      showMessageOnce('Please fix validation errors','error')
+      return 
+    }
+
+    const index = students.value.findIndex(s => s.id === selectedStudent.value.id)
+
+    if (index !== -1) {
+      loading.value = true
+      console.log('lods')
+      loading.value = true
+      students.value[index] = { ...selectedStudent.value }
+      localStorage.setItem('rules', JSON.stringify(students.value))
+      selectedStudent.value = null
+
+      showMessageOnce('Student updated successfully!','success')
+      
+      setTimeout(() => {
+       loading.value = false, window.location.reload()
+      }, 1000)
+    }
+
+  } catch (error) {
+    showMessageOnce('Validation error occurred','error')
+    console.log('Validation error:', error)
   }
-
-  setTimeout(() => {
-    console.log('Saving', selectedStudent)
-    loading.value = false
-    },2000)
 }
+
+const tableEditForm = ref(null);
+
+const saveTableStudentEdits = async () => {
+  if (!tableEditForm.value || loading.value) {
+    showMessageOnce('Form not available or loading', 'error');
+    return;
+  }
+  try {
+    const formInstance = Array.isArray(tableEditForm.value) ? tableEditForm.value[0] : tableEditForm.value;
+    if (!formInstance || typeof formInstance.validate !== 'function') {
+      throw new Error('Form instance not available');
+    }
+
+    const isValid = await new Promise((resolve) => {
+      formInstance.validate((valid, fields) => {
+        if (valid) {
+          resolve(true);
+        } else {
+          console.log('Validation failed:', fields);
+          resolve(false);
+        }
+      });
+    });
+
+    if (!isValid) {
+      showMessageOnce('Please fix validation errors', 'error');
+      return;
+    }
+
+    const index = students.value.findIndex(s => s.id === selectedStudent.value.id);
+    if (index !== -1) {
+      loading.value = true;
+      console.log('lodss')
+      students.value[index] = { ...selectedStudent.value };
+      localStorage.setItem('rules', JSON.stringify(students.value));
+      selectedStudent.value = null;
+
+      showMessageOnce('Student updated successfully!', 'success');
+      setTimeout(() => {
+       loading.value = false, window.location.reload()
+      }, 1000)
+    }
+  } catch (error) {
+    showMessageOnce('Validation error occurred', 'error');
+    console.log('Validation error:', error);
+    loading.value = false;
+  }
+};
+
+
+
+
+
 
 type StringKeysOnly<T> = {
   [K in keyof T]: T[K] extends string ? K : never;
@@ -728,7 +934,8 @@ const formRules = {
       pattern: /^[A-Za-z\s'-]+$/,
       message: 'Only letters, spaces, hyphens, and apostrophes allowed',
       trigger: 'blur'
-    }
+    },
+    {min: 2, max: 15, message: 'First name should be at least 2 characters'}
   ],
   middleInitial: [
     { required: true, message: 'Middle name is required', trigger: 'blur' },
@@ -757,19 +964,34 @@ const formRules = {
     { required: true, message: 'Password is required', trigger: 'blur' },
     {
       min: 6,
-      message: 'Password must be at least 6 characters',
+      message: 'Password must be at least 8 characters',
       trigger: 'blur'
+    },
+    {
+      pattern: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_\-+=<>?{}[\]~])[A-Za-z\d!@#$%^&*()_\-+=<>?{}[\]~]{8,}$/,
+      message: 'Use at least 8 characters with a capital letter, number, and symbol.'
     }
   ],
   address: [
     { required: true, message: 'Address is required', trigger: 'blur' }
   ],
   age: [
-    { required: true, message: 'Please enter your age', trigger: 'blur' },
-    { type: 'number', min: 1, max: 90, message: 'Age must be between 1 and 90', trigger: 'blur' },
+    { type: 'number', min: 1, max: 90, message: 'Age must be between 1 and 90', trigger: 'blur' }
   ]
 }
 
+const openConfirmDialog = ref(false)
+const openConfirmDialogTable = ref(false)
+
+function confirmSave() {
+  openConfirmDialog.value = false
+  saveStudentEdits()
+}
+
+function confirmSaveTable() {
+  openConfirmDialogTable.value = false
+  saveTableStudentEdits()
+}
 
 
 watch([searchName, selectedCourse], applyFilters)
@@ -1428,6 +1650,33 @@ loadStudents()
     padding: 2px 6px;
   }
 }
+
+.confirm-dialog .el-dialog {
+  max-width: 400px;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  top: 50%;
+}
+
+
+@media (max-width: 375px) {
+  .confirm-dialog .el-dialog {
+    width: 95%;
+    max-width: 95%;
+    padding: 16px;
+  }
+
+  .confirm-dialog .el-dialog__body {
+    font-size: 14px;
+  }
+
+  .confirm-dialog .el-dialog__footer {
+    flex-direction: column;
+    gap: 8px;
+    align-items: stretch;
+  }
+}
+
 
 
 </style>
