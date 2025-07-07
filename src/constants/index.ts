@@ -16,6 +16,7 @@ interface Student {
   address: string
   id: string
   password: String
+  username: String
 }
 
 

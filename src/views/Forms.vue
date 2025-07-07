@@ -108,8 +108,16 @@ const rules = {
     { min: 3, max: 20, message: 'Username must be between 3 and 20 characters', trigger: 'blur', },
   ],
   password: [
-    { required: true, message: 'Please enter a password', trigger: 'blur' },
-    { min: 6, max: 20, message: 'Password must be between 6 and 20 characters', trigger: 'blur' },
+    { required: true, message: 'Password is required', trigger: 'blur' },
+    {
+      min: 6,
+      message: 'Password must be at least 8 characters',
+      trigger: 'blur'
+    },
+    {
+      pattern: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_\-+=<>?{}[\]~])[A-Za-z\d!@#$%^&*()_\-+=<>?{}[\]~]{8,}$/,
+      message: 'Use at least 8 characters with a capital letter, number, and symbol.'
+    },
   ],
   firstName: [
     { required: true, message: 'Please enter your first name', trigger: 'blur' },

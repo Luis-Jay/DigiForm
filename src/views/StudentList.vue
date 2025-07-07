@@ -202,11 +202,23 @@
                   placeholder="Pick a date"
                   style="width: 100%"
                   @change="updateAge"
+                  :disabled-date="disabledFutureDates"
                 />
               </el-form-item>
 
               <el-form-item label="Age" prop="age">
                 <el-input v-model="selectedStudent.age" :readonly="true" />
+              </el-form-item>
+
+
+              <el-form-item label="Username" prop="username">
+                <el-input
+                  type="text"
+                  v-model="selectedStudent.username"
+                  placeholder="Change Username"
+                  :rows="1"
+                  show-password
+                />
               </el-form-item>
 
               <el-form-item label="Password" prop="password">
@@ -627,6 +639,7 @@ import { truncateString } from '@/utils/truncate';
 import { hasMiddleInitial } from '@/utils/studentUtils';
 import { removeLeadingSpaces } from '@/utils/leadingspaces';
 import { showMessageOnce } from '@/utils/showMessageOnce'
+import {disabledFutureDates} from '@/utils/disableDate'
 
 const loading = ref(false)
 const { checkAuth, logout } = useAuth()
@@ -938,7 +951,6 @@ const formRules = {
     {min: 2, max: 15, message: 'First name should be at least 2 characters'}
   ],
   middleInitial: [
-    { required: true, message: 'Middle name is required', trigger: 'blur' },
     {
       pattern: /^[A-Za-z\s'-]+$/,
       message: 'Only letters, spaces, hyphens, and apostrophes allowed',
@@ -973,10 +985,15 @@ const formRules = {
     }
   ],
   address: [
-    { required: true, message: 'Address is required', trigger: 'blur' }
+    { required: true, message: 'Address is required', trigger: 'blur' },
+    {min: 5, max: 100, message: 'Address exceeds maximum inputs', triggers: 'blur'},
   ],
   age: [
-    { type: 'number', min: 1, max: 90, message: 'Age must be between 1 and 90', trigger: 'blur' }
+    { type: 'number', min: 17, max: 90, message: 'Age must be between 17 and 90', trigger: 'blur' }
+  ],
+  username: [
+    { required: true, message: 'Please enter a username', trigger: 'blur' },
+    { min: 3, max: 20, message: 'Username must be between 3 and 20 characters', trigger: 'blur', },
   ]
 }
 
@@ -992,6 +1009,8 @@ function confirmSaveTable() {
   openConfirmDialogTable.value = false
   saveTableStudentEdits()
 }
+
+
 
 
 watch([searchName, selectedCourse], applyFilters)
@@ -1623,9 +1642,8 @@ loadStudents()
     font-size: 12px;
   }
 
-  /* Optional: Hide less important columns */
-  .el-table-column:nth-child(3), /* M.I. */
-  .el-table-column:nth-child(7)  /* Birth Date */
+  .el-table-column:nth-child(3),
+  .el-table-column:nth-child(7) 
   {
     display: none;
   }
