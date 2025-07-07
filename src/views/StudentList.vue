@@ -203,6 +203,7 @@
                   style="width: 100%"
                   @change="updateAge"
                   :disabled-date="disabledFutureDates"
+                  :default-value="allowedDate"
                 />
               </el-form-item>
 
@@ -639,7 +640,7 @@ import { truncateString } from '@/utils/truncate';
 import { hasMiddleInitial } from '@/utils/studentUtils';
 import { removeLeadingSpaces } from '@/utils/leadingspaces';
 import { showMessageOnce } from '@/utils/showMessageOnce'
-import {disabledFutureDates} from '@/utils/disableDate'
+import {allowedDate, disabledFutureDates} from '@/utils/disableDate'
 
 const loading = ref(false)
 const { checkAuth, logout } = useAuth()

@@ -29,6 +29,8 @@
           type="date"
           placeholder="Select birth date"
           style="width: 100%"
+          :disabled-date="disabledFutureDates"
+          :default-value="allowedDate"
         />
       </el-form-item>
 
@@ -74,6 +76,8 @@ import { courses } from '@/constants'
 import { ElMessage } from 'element-plus'
 import { watch } from 'vue'
 import { removeLeadingSpaces } from '@/utils/leadingspaces';
+import { disabledFutureDates } from '@/utils/disableDate';
+import { allowedDate } from '@/utils/disableDate';
 
 interface RuleForm {
     username: string
@@ -172,7 +176,7 @@ const rules = {
   ],
   age: [
     { required: true, message: 'Please enter your age', trigger: 'blur' },
-    { type: 'number', min: 1, max: 120, message: 'Age must be between 1 and 120', trigger: 'blur' },
+    { type: 'number', min: 17, max: 120, message: 'Age must be between 17 and 120', trigger: 'blur' },
   ],
   address: [
     { required: true, message: 'Please enter your address', trigger: 'blur' },
