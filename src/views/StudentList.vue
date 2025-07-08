@@ -254,7 +254,17 @@
               </el-form-item>
 
               <div class="form-actions">
-                <el-button type="success" @click="openConfirmDialog = true">
+                <el-button
+                  type="success"
+                  @click="async () => {
+                    const isValid = await isEditFormValid();
+                    if (isValid) {
+                      openConfirmDialog = true;
+                    } else {
+                      showMessageOnce('Please fix validation errors', 'error');
+                    }
+                  }"
+                >
                   Save Changes
                 </el-button>
                 <el-button @click="selectedStudent = null">
@@ -507,7 +517,14 @@
       <el-table-column label="Actions" width="160" fixed="right" align="center">
         <template #default="{ row }">
           <div v-if="selectedStudent?.id === row.id" class="table-actions">
-            <el-button type="success" size="small" @click="openConfirmDialogTable = true">
+            <el-button type="success" size="small" @click="async () => {
+                    const isValid = await isTableEditFormValid();
+                    if (isValid) {
+                      openConfirmDialogTable = true;
+                    } else {
+                      showMessageOnce('Please fix validation errors', 'error');
+                    }
+                  }">
               Save
             </el-button>
             <el-button size="small" @click="selectedStudent = null">
@@ -690,10 +707,20 @@
             />
           </el-form-item>
 
-          <div class="form-actions">
-            <el-button type="success" @click="openConfirmDialog = true">
-              Save Changes
-            </el-button>
+              <div class="form-actions">
+                <el-button
+                  type="success"
+                  @click="async () => {
+                    const isValid = await isEditFormValid();
+                    if (isValid) {
+                      openConfirmDialog = true;
+                    } else {
+                      showMessageOnce('Please fix validation errors', 'error');
+                    }
+                  }"
+                >
+                  Save Changes
+                </el-button>
             <el-button @click="editDrawerOpen = false; selectedStudent = null">
               Cancel
             </el-button>
@@ -1186,6 +1213,67 @@ const formRules = {
 
 const openConfirmDialog = ref(false)
 const openConfirmDialogTable = ref(false)
+
+// Function to validate edit form using existing formRules
+const isEditFormValid = async (): Promise<boolean> => {
+  // Determine which form to validate based on edit location
+  const formRef = editLocation.value === 'drawer' ? editDrawerForm.value : editForm.value
+  
+  if (!formRef) {
+    return false
+  }
+  
+  try {
+    const formInstance = Array.isArray(formRef) ? formRef[0] : formRef
+    
+    if (!formInstance || typeof formInstance.validate !== 'function') {
+      return false
+    }
+
+    return new Promise((resolve) => {
+      formInstance.validate((valid, fields) => {
+        if (valid) {
+          resolve(true)
+        } else {
+          console.log('Validation failed:', fields)
+          resolve(false)
+        }
+      })
+    })
+  } catch (error) {
+    console.log('Validation error:', error)
+    return false
+  }
+}
+
+// Function to validate table edit form
+const isTableEditFormValid = async (): Promise<boolean> => {
+  if (!tableEditForm.value) {
+    return false
+  }
+  
+  try {
+    const formInstance = Array.isArray(tableEditForm.value) ? tableEditForm.value[0] : tableEditForm.value
+    
+    if (!formInstance || typeof formInstance.validate !== 'function') {
+      return false
+    }
+
+    return new Promise((resolve) => {
+      formInstance.validate((valid, fields) => {
+        if (valid) {
+          resolve(true)
+        } else {
+          console.log('Table validation failed:', fields)
+          resolve(false)
+        }
+      })
+    })
+  } catch (error) {
+    console.log('Table validation error:', error)
+    return false
+  }
+}
 
 function confirmSave() {
   openConfirmDialog.value = false
