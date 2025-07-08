@@ -109,6 +109,18 @@
           </el-radio-group>
         </el-form-item>
 
+        <!-- Edit Location Toggle -->
+        <el-form-item label="Edit Mode" class="filter-item">
+          <el-radio-group v-model="editLocation" class="edit-location-toggle">
+            <el-radio-button :value="'card'">
+              <i class="el-icon-edit"></i> Edit in Input
+            </el-radio-button>
+            <el-radio-button :value="'drawer'">
+              <i class="el-icon-s-fold"></i> Edit in Drawer
+            </el-radio-button>
+          </el-radio-group>
+        </el-form-item>
+
         <!-- Reset Filters -->
         <el-form-item label="Actions" class="filter-item">
           <el-button 
@@ -143,7 +155,7 @@
           class="student-card"
           shadow="hover"
         >
-          <div v-if="selectedStudent?.id === student.id" class="edit-mode">
+          <div v-if="editLocation === 'card' && selectedStudent?.id === student.id" class="edit-mode">
             <el-form-item label=""></el-form-item>
             <!--  Edit Form -->
             <div class="edit-header">
@@ -570,6 +582,127 @@
     </template>
   </el-drawer>
 
+  <!-- Edit Drawer -->
+  <el-drawer 
+    v-model="editDrawerOpen" 
+    :direction="direction" 
+    size="40%"
+    class="edit-drawer"
+  >
+    <template #header>
+      <div class="drawer-header">
+        <h3 class="drawer-title">
+          <i class="el-icon-edit"></i>
+          Edit Student
+        </h3>
+        <p class="drawer-subtitle">Update student information</p>
+      </div>
+    </template>
+    <template #default>
+      <div class="drawer-content" v-if="selectedStudent">
+        <el-form
+          label-position="top"
+          class="edit-form"
+          :model="selectedStudent"
+          :rules="formRules"
+          ref="editDrawerForm"
+        >
+          <div class="form-row">
+            <el-form-item label="First Name" class="form-item" prop="firstName">
+              <el-input @input="val => leadingSpaces('firstName', val)" v-model="selectedStudent.firstName" placeholder="First name" />
+            </el-form-item>
+
+            <el-form-item
+              label="Middle Name"
+              class="form-item-small"
+              prop="middleInitial"
+            >
+              <el-input
+                @input="val => leadingSpaces('middleInitial', val)"
+                v-model="selectedStudent.middleInitial"
+                placeholder="Middle name"
+                maxlength="30"
+              />
+            </el-form-item>
+          </div>
+
+          <el-form-item label="Last Name" prop="lastName">
+            <el-input @input="val => leadingSpaces('lastName', val)" v-model="selectedStudent.lastName" placeholder="Last name" />
+          </el-form-item>
+
+          <el-form-item label="Course" prop="course">
+            <el-select
+              v-model="selectedStudent.course"
+              placeholder="Select Course"
+              style="width: 100%"
+            >
+              <el-option
+                v-for="option in courseOptions"
+                :key="option"
+                :label="option"
+                :value="option"
+              />
+            </el-select>
+          </el-form-item>
+
+          <el-form-item label="Birthday" prop="birthDate">
+            <el-date-picker
+              v-model="selectedStudent.birthDate"
+              type="date"
+              placeholder="Pick a date"
+              style="width: 100%"
+              @change="updateAge"
+              :disabled-date="disabledFutureDates"
+              :default-value="allowedDate"
+            />
+          </el-form-item>
+
+          <el-form-item label="Age" prop="age">
+            <el-input v-model="selectedStudent.age" :readonly="true" />
+          </el-form-item>
+
+          <el-form-item label="Username" prop="username">
+            <el-input
+              type="text"
+              v-model="selectedStudent.username"
+              placeholder="Change Username"
+              :rows="1"
+              show-password
+            />
+          </el-form-item>
+
+          <el-form-item label="Password" prop="password">
+            <el-input
+              type="password"
+              v-model="selectedStudent.password"
+              placeholder="Change Password"
+              :rows="1"
+              show-password
+            />
+          </el-form-item>
+
+          <el-form-item label="Address" prop="address">
+            <el-input
+              type="textarea"
+              v-model="selectedStudent.address"
+              placeholder="Enter address"
+              :rows="3"
+            />
+          </el-form-item>
+
+          <div class="form-actions">
+            <el-button type="success" @click="openConfirmDialog = true">
+              Save Changes
+            </el-button>
+            <el-button @click="editDrawerOpen = false; selectedStudent = null">
+              Cancel
+            </el-button>
+          </div>
+        </el-form>
+      </div>
+    </template>
+  </el-drawer>
+
             <!-- Confirmation Modal -->
             <el-dialog
               v-model="openConfirmDialog"
@@ -641,6 +774,7 @@ import { hasMiddleInitial } from '@/utils/studentUtils';
 import { removeLeadingSpaces } from '@/utils/leadingspaces';
 import { showMessageOnce } from '@/utils/showMessageOnce'
 import {allowedDate, disabledFutureDates} from '@/utils/disableDate'
+import { isDuplicateEntry } from '@/utils/DuplicateEntry'
 
 const loading = ref(false)
 const { checkAuth, logout } = useAuth()
@@ -666,6 +800,7 @@ const circleUrl = ref(
 const router = useRouter()
 const totalStudents = computed(() => students.value.length)
 const editForm = ref<FormInstance | null>(null)
+const editDrawerForm = ref<FormInstance | null>(null)
 
 
 function cancelClick() {
@@ -721,6 +856,8 @@ const filteredStudents = ref<Student[]>([])
 const searchName = ref('')
 const selectedCourse = ref<string | null>(null)
 const viewMode = ref<'card' | 'table'>('card') 
+const editLocation = ref<'card' | 'drawer'>('card')
+const editDrawerOpen = ref(false)
 
 
 function loadStudents() {
@@ -759,20 +896,30 @@ const resetFilters = () => {
 
 function editStudent(student: Student) {
   selectedStudent.value = { ...student }
+  if (editLocation.value === 'drawer') {
+    editDrawerOpen.value = true
+  }
 }
 
 
 
 const saveStudentEdits = async () => {
-  if (!editForm.value || loading.value) return
+  if (loading.value) return
+  
+  // Determine which form to validate based on edit location
+  const formRef = editLocation.value === 'drawer' ? editDrawerForm.value : editForm.value
+  
+  if (!formRef) {
+    showMessageOnce('Form not available', 'error')
+    return
+  }
+  
   try {
-   
-    const formInstance = editForm.value[0]
+    const formInstance = Array.isArray(formRef) ? formRef[0] : formRef
     
     if (!formInstance || typeof formInstance.validate !== 'function') {
       throw new Error('Form instance not available')
     }
-
 
     const isValid = await new Promise((resolve) => {
       formInstance.validate((valid, fields) => {
@@ -790,15 +937,37 @@ const saveStudentEdits = async () => {
       return 
     }
 
+    // Check for duplicates (excluding current student being edited)
+    const currentStudentId = selectedStudent.value.id;
+    const tempStudent = { ...selectedStudent.value };
+    tempStudent.id = ''; // Temporarily remove ID to check against other students
+    
+    const isDuplicate = students.value.some(student => 
+      student.id !== currentStudentId && 
+      student.firstName.toLowerCase() === tempStudent.firstName.toLowerCase() &&
+      student.lastName.toLowerCase() === tempStudent.lastName.toLowerCase() &&
+      student.middleInitial.toLowerCase() === tempStudent.middleInitial.toLowerCase() &&
+      student.birthDate === tempStudent.birthDate
+    );
+    
+    if (isDuplicate) {
+      showMessageOnce('Duplicate entry found', 'error');
+      return;
+    }
+
     const index = students.value.findIndex(s => s.id === selectedStudent.value.id)
 
     if (index !== -1) {
       loading.value = true
       console.log('lods')
-      loading.value = true
       students.value[index] = { ...selectedStudent.value }
       localStorage.setItem('rules', JSON.stringify(students.value))
       selectedStudent.value = null
+      
+      // Close drawer if it's open
+      if (editDrawerOpen.value) {
+        editDrawerOpen.value = false
+      }
 
       showMessageOnce('Student updated successfully!','success')
       
@@ -816,12 +985,22 @@ const saveStudentEdits = async () => {
 const tableEditForm = ref(null);
 
 const saveTableStudentEdits = async () => {
-  if (!tableEditForm.value || loading.value) {
-    showMessageOnce('Form not available or loading', 'error');
+  if (loading.value) {
+    showMessageOnce('Loading in progress', 'error');
+    console.log('Loading in progress')
     return;
   }
+  
+  // For table view, always use tableEditForm
+  const formRef = tableEditForm.value;
+  
+  if (!formRef) {
+    showMessageOnce('Form not available', 'error');
+    return;
+  }
+  
   try {
-    const formInstance = Array.isArray(tableEditForm.value) ? tableEditForm.value[0] : tableEditForm.value;
+    const formInstance = Array.isArray(formRef) ? formRef[0] : formRef;
     if (!formInstance || typeof formInstance.validate !== 'function') {
       throw new Error('Form instance not available');
     }
@@ -837,6 +1016,8 @@ const saveTableStudentEdits = async () => {
       });
     });
 
+    
+
     if (!isValid) {
       showMessageOnce('Please fix validation errors', 'error');
       return;
@@ -849,6 +1030,11 @@ const saveTableStudentEdits = async () => {
       students.value[index] = { ...selectedStudent.value };
       localStorage.setItem('rules', JSON.stringify(students.value));
       selectedStudent.value = null;
+      
+      // Close drawer if it's open
+      if (editDrawerOpen.value) {
+        editDrawerOpen.value = false
+      }
 
       showMessageOnce('Student updated successfully!', 'success');
       setTimeout(() => {
@@ -949,7 +1135,7 @@ const formRules = {
       message: 'Only letters, spaces, hyphens, and apostrophes allowed',
       trigger: 'blur'
     },
-    {min: 2, max: 15, message: 'First name should be at least 2 characters'}
+    {min: 2, max: 244, message: 'First name should be at least 2 characters'},
   ],
   middleInitial: [
     {
@@ -1196,6 +1382,11 @@ loadStudents()
 }
 
 .view-toggle {
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.edit-location-toggle {
   border-radius: 8px;
   overflow: hidden;
 }
@@ -1502,8 +1693,15 @@ loadStudents()
 }
 
 /*  Drawer */
-.registration-drawer {
+.registration-drawer,
+.edit-drawer {
   border-radius: 16px 0 0 16px;
+}
+
+.edit-drawer .drawer-content {
+  padding: 24px;
+  max-height: calc(100vh - 120px);
+  overflow-y: auto;
 }
 
 .drawer-header {

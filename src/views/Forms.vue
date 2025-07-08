@@ -54,7 +54,7 @@
       </el-form-item>
 
       <el-form-item label="Password" prop="password">
-        <el-input @input="val => leadingSpaces('password', val)" type="password" v-model="ruleForm.password" placeholder="Enter your password" />
+        <el-input @input="val => leadingSpaces('password', val)" type="password" v-model="ruleForm.password" placeholder="Enter your password" show-password/>
       </el-form-item>
 
       <el-form-item>
@@ -78,6 +78,8 @@ import { watch } from 'vue'
 import { removeLeadingSpaces } from '@/utils/leadingspaces';
 import { disabledFutureDates } from '@/utils/disableDate';
 import { allowedDate } from '@/utils/disableDate';
+import { isDuplicateEntry } from '@/utils/DuplicateEntry';
+import { showMessageOnce } from '@/utils/showMessageOnce';
 
 interface RuleForm {
     username: string
@@ -125,7 +127,7 @@ const rules = {
   ],
   firstName: [
     { required: true, message: 'Please enter your first name', trigger: 'blur' },
-    { min: 6, max: 30, message: 'First name exceeds maximum characters', trigger: 'blur' },
+    { min: 2, max: 244, message: 'First name should be at least 2 characters', trigger: 'blur' },
   ],
  middleInitial: [
   {
@@ -191,13 +193,35 @@ const courseOptions = courses;
 const submitForm = async (formEl: FormInstance | undefined) => {
   if (!formEl || isSubmitting.value ) return;
 
+  
+
+
   isSubmitting.value = true;
 
+
+
   await formEl.validate((valid, fields) => {
+    console.log('Validation result:', valid);
+    console.log('Validation fields:', fields);
+    console.log('Form data:', ruleForm);
+    
     if (valid) {
+      console.log('Form is valid, checking for duplicates...');
+      const isDuplicate = isDuplicateEntry(ruleForm);
+      console.log('Is duplicate:', isDuplicate);
+      
+      if(isDuplicate) {
+        console.log('Duplicate found, stopping submission');
+        showMessageOnce('Duplicate entry found', 'error');
+        isSubmitting.value = false;
+        return;
+      }
+      
+      console.log('No duplicates, proceeding with save...');
+
       const existing = localStorage.getItem('rules');
       let users = [];
-
+   
       try {
         const parsed = existing ? JSON.parse(existing) : [];
         users = Array.isArray(parsed) ? parsed : [parsed];
@@ -221,9 +245,7 @@ const submitForm = async (formEl: FormInstance | undefined) => {
 
       ElMessage.success('User registered successfully!');
 
-      setTimeout(() => {
-        window.location.reload();
-      }, 1000);
+   
 
     } else {
       console.log('Form validation failed', fields);
