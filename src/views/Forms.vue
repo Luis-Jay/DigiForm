@@ -75,7 +75,7 @@ import { FormInstance, FormRules, ElButton } from 'element-plus';
 import { courses } from '@/constants'
 import { ElMessage } from 'element-plus'
 import { watch } from 'vue'
-import { removeLeadingSpaces } from '@/utils/leadingspaces';
+import { removeLeadingSpaces } from '@/utils/leadingSpaces';
 import { disabledFutureDates } from '@/utils/disableDate';
 import { allowedDate } from '@/utils/disableDate';
 import { isDuplicateEntry } from '@/utils/DuplicateEntry';
@@ -193,7 +193,7 @@ const courseOptions = courses;
 const submitForm = async (formEl: FormInstance | undefined) => {
   if (!formEl || isSubmitting.value ) return;
 
-  
+
 
 
   isSubmitting.value = true;
@@ -204,24 +204,24 @@ const submitForm = async (formEl: FormInstance | undefined) => {
     console.log('Validation result:', valid);
     console.log('Validation fields:', fields);
     console.log('Form data:', ruleForm);
-    
+
     if (valid) {
       console.log('Form is valid, checking for duplicates...');
       const isDuplicate = isDuplicateEntry(ruleForm);
       console.log('Is duplicate:', isDuplicate);
-      
+
       if(isDuplicate) {
         console.log('Duplicate found, stopping submission');
         showMessageOnce('Duplicate entry found', 'error');
         isSubmitting.value = false;
         return;
       }
-      
+
       console.log('No duplicates, proceeding with save...');
 
       const existing = localStorage.getItem('rules');
       let users = [];
-   
+
       try {
         const parsed = existing ? JSON.parse(existing) : [];
         users = Array.isArray(parsed) ? parsed : [parsed];
@@ -245,7 +245,7 @@ const submitForm = async (formEl: FormInstance | undefined) => {
 
       ElMessage.success('User registered successfully!');
 
-   
+
 
     } else {
       console.log('Form validation failed', fields);
